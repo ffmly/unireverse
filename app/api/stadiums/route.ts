@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { stadiumsOperations } from "@/lib/firestore-utils"
 
 export async function GET() {
   try {
-    const { data, error } = await supabase.from("stadiums").select("*")
-
-    if (error) {
-      throw error
-    }
-
+    const data = await stadiumsOperations.getAll()
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error fetching stadiums:", error)
@@ -20,15 +15,11 @@ export async function POST(request: Request) {
   try {
     const { name, sportId } = await request.json()
 
-    const { data, error } = await supabase
-      .from("stadiums")
-      .insert([{ name, sport_id: sportId, enabled: true }])
-      .select()
-      .single()
-
-    if (error) {
-      throw error
-    }
+    const data = await stadiumsOperations.create({
+      name,
+      sport_id: sportId,
+      enabled: true
+    })
 
     return NextResponse.json(data)
   } catch (error) {

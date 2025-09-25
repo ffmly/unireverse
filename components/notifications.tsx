@@ -23,35 +23,10 @@ export default function Notifications() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
 
-  // Mock notifications data
+  // Load notifications (empty for now - can be implemented later)
   useEffect(() => {
-    // In a real app, this would be fetched from an API
-    setNotifications([
-      {
-        id: "1",
-        type: "reservation",
-        subtype: "upcoming",
-        message: `${t("notifications.reservation.upcoming")} 16:00`,
-        time: "10 min ago",
-        read: false,
-      },
-      {
-        id: "2",
-        type: "stadium",
-        subtype: "available",
-        message: `${t("notifications.stadium.available")} ${t("sports.football")}`,
-        time: "30 min ago",
-        read: false,
-      },
-      {
-        id: "3",
-        type: "friendlyMatch",
-        subtype: "new",
-        message: t("notifications.friendlyMatch.new"),
-        time: "1 hour ago",
-        read: true,
-      },
-    ])
+    // In a real implementation, fetch notifications from API
+    setNotifications([])
   }, [t])
 
   // Update unread count when notifications change

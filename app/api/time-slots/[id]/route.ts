@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { timeSlotsOperations } from "@/lib/firestore-utils"
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { enabled } = await request.json()
-    const { id } = params
+    const { id } = await params
 
-    const { data, error } = await supabase.from("time_slots").update({ enabled }).eq("id", id).select().single()
-
-    if (error) {
-      throw error
-    }
+    const data = await timeSlotsOperations.update(id, { enabled })
 
     return NextResponse.json(data)
   } catch (error) {
@@ -19,15 +15,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
 
-    const { error } = await supabase.from("time_slots").delete().eq("id", id)
-
-    if (error) {
-      throw error
-    }
+    await timeSlotsOperations.delete(id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

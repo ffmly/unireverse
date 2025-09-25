@@ -54,22 +54,22 @@ export default function BookingCalendar({ userId }: BookingCalendarProps) {
   const [availableStadiums, setAvailableStadiums] = useState<Stadium[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
-  // Mock data - in a real app, this would come from the API
+  // Sports configuration
   const sports: { id: Sport; name: string; imageSrc: string }[] = [
     {
       id: "basketball",
       name: t("sports.basketball"),
-      imageSrc: "/images/basketball.png",
+      imageSrc: "/placeholder.svg",
     },
     {
       id: "handball",
       name: t("sports.handball"),
-      imageSrc: "/images/handball.png",
+      imageSrc: "/placeholder.svg",
     },
     {
       id: "football",
       name: t("sports.football"),
-      imageSrc: "/images/football.png",
+      imageSrc: "/placeholder.svg",
     },
   ]
 

@@ -19,6 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Edit, Plus, Trash2 } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/lib/language-context"
 
 interface Club {
   id: string
@@ -33,10 +34,12 @@ export default function AdminClubs() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [selectedClub, setSelectedClub] = useState<Club | null>(null)
+  const { language } = useLanguage()
 
   // Form state
   const [formData, setFormData] = useState({
     username: "",
+    email: "",
     password: "",
     clubName: "",
     department: "",
@@ -46,34 +49,34 @@ export default function AdminClubs() {
     const fetchClubs = async () => {
       setIsLoading(true)
       try {
-        // In a real app, this would be an API call
-        // For now, we'll use mock data
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        // Fetch all users and filter for clubs (role !== 'admin')
+        const response = await fetch('/api/users')
+        if (!response.ok) {
+          throw new Error("Failed to fetch clubs")
+        }
 
-        setClubs([
-          {
-            id: "1",
-            username: "athletic_united",
-            clubName: "نادي أثلتيك يونايتد",
-            department: "قسم الرياضة",
-          },
-          {
-            id: "2",
-            username: "soccer_stars",
-            clubName: "نجوم كرة القدم",
-            department: "كلية التربية البدنية",
-          },
-          {
-            id: "3",
-            username: "tennis_club",
-            clubName: "نادي التنس",
-            department: "قسم الرياضة",
-          },
-        ])
+        const data = await response.json()
+        
+        // Filter out admin users and transform data
+        const clubUsers = data
+          .filter((user: any) => user.role !== 'admin')
+          .map((user: any) => ({
+            id: user.id,
+            username: user.username || 'Unknown',
+            clubName: user.clubName || 'Unknown Club',
+            department: user.department || 'Unknown Department',
+            email: user.email || '',
+            role: user.role || 'club'
+          }))
+
+        setClubs(clubUsers)
       } catch (error) {
+        console.error('Error fetching clubs:', error)
         toast({
-          title: "خطأ في تحميل النوادي",
-          description: "حدث خطأ أثناء محاولة تحميل النوادي. يرجى المحاولة مرة أخرى.",
+          title: language === "ar" ? "خطأ في تحميل النوادي" : "Error loading clubs",
+          description: language === "ar" 
+            ? "حدث خطأ أثناء محاولة تحميل النوادي. يرجى المحاولة مرة أخرى." 
+            : "An error occurred while trying to load clubs. Please try again.",
           variant: "destructive",
         })
       } finally {
@@ -82,7 +85,7 @@ export default function AdminClubs() {
     }
 
     fetchClubs()
-  }, [])
+  }, [language])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -92,29 +95,66 @@ export default function AdminClubs() {
   const handleAddClub = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    try {
-      // In a real app, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+    if (!formData.username || !formData.email || !formData.password || !formData.clubName) {
+      toast({
+        title: language === "ar" ? "خطأ في الإدخال" : "Input Error",
+        description: language === "ar" 
+          ? "يرجى ملء جميع الحقول المطلوبة" 
+          : "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
 
+    try {
+      // Create user in Firebase through our API
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          clubName: formData.clubName,
+          department: formData.department,
+          role: 'club'
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create club')
+      }
+
+      const newUser = await response.json()
+      
+      // Add to local state
       const newClub: Club = {
-        id: Date.now().toString(),
-        username: formData.username,
-        clubName: formData.clubName,
-        department: formData.department,
+        id: newUser.id,
+        username: newUser.username,
+        clubName: newUser.clubName,
+        department: newUser.department,
       }
 
       setClubs([...clubs, newClub])
       setIsAddDialogOpen(false)
-      setFormData({ username: "", password: "", clubName: "", department: "" })
+      setFormData({ username: "", email: "", password: "", clubName: "", department: "" })
 
       toast({
-        title: "تم إضافة النادي",
-        description: "تم إضافة النادي بنجاح",
+        title: language === "ar" ? "تم إضافة النادي" : "Club Created",
+        description: language === "ar" 
+          ? "تم إضافة النادي بنجاح" 
+          : "Club has been created successfully",
       })
     } catch (error) {
+      console.error('Error creating club:', error)
       toast({
-        title: "فشل إضافة النادي",
-        description: "حدث خطأ أثناء محاولة إضافة النادي. يرجى المحاولة مرة أخرى.",
+        title: language === "ar" ? "فشل إضافة النادي" : "Failed to create club",
+        description: language === "ar" 
+          ? "حدث خطأ أثناء محاولة إضافة النادي. يرجى المحاولة مرة أخرى." 
+          : "An error occurred while trying to create the club. Please try again.",
         variant: "destructive",
       })
     }
@@ -244,6 +284,17 @@ export default function AdminClubs() {
                     id="username"
                     name="username"
                     value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">البريد الإلكتروني</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
                     onChange={handleInputChange}
                     required
                   />

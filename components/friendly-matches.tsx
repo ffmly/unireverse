@@ -62,32 +62,9 @@ export default function FriendlyMatches() {
     const fetchMatches = async () => {
       setIsLoading(true)
       try {
-        // In a real app, this would be an API call
-        // For now, we'll use mock data
-        await new Promise((resolve) => setTimeout(resolve, 1000))
-
-        setMatches([
-          {
-            id: "1",
-            hostId: "2",
-            hostName: "نجوم كرة القدم",
-            sportId: "football",
-            date: "2025-04-28",
-            time: "14:00",
-            status: "open",
-          },
-          {
-            id: "2",
-            hostId: "3",
-            hostName: "نادي كرة السلة",
-            sportId: "basketball",
-            date: "2025-04-25",
-            time: "08:00",
-            status: "confirmed",
-            guestId: "1",
-            guestName: "نادي أثلتيك يونايتد",
-          },
-        ])
+        // In a real implementation, fetch friendly matches from API
+        // For now, show empty list
+        setMatches([])
       } catch (error) {
         toast({
           title: language === "ar" ? "خطأ في تحميل المباريات" : "Error loading matches",

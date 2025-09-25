@@ -50,48 +50,22 @@ export default function AdminStadiums() {
     const fetchStadiums = async () => {
       setIsLoading(true)
       try {
-        // In a real app, this would be an API call
-        // For now, we'll use mock data
-        await new Promise((resolve) => setTimeout(resolve, 1000))
+        const response = await fetch('/api/stadiums')
+        if (!response.ok) {
+          throw new Error("Failed to fetch stadiums")
+        }
 
-        setStadiums([
-          {
-            id: "1",
-            name: language === "ar" ? "ملعب التنس 1" : "Tennis Stadium 1",
-            sportId: "tennis",
-            enabled: true,
-          },
-          {
-            id: "2",
-            name: language === "ar" ? "ملعب التنس 2" : "Tennis Stadium 2",
-            sportId: "tennis",
-            enabled: true,
-          },
-          {
-            id: "3",
-            name: language === "ar" ? "ملعب كرة اليد 1" : "Handball Stadium 1",
-            sportId: "handball",
-            enabled: true,
-          },
-          {
-            id: "4",
-            name: language === "ar" ? "ملعب كرة اليد 2" : "Handball Stadium 2",
-            sportId: "handball",
-            enabled: false,
-          },
-          {
-            id: "5",
-            name: language === "ar" ? "ملعب كرة القدم الرئيسي" : "Main Football Stadium",
-            sportId: "football",
-            enabled: true,
-          },
-          {
-            id: "6",
-            name: language === "ar" ? "ملعب كرة القدم الفرعي" : "Secondary Football Stadium",
-            sportId: "football",
-            enabled: true,
-          },
-        ])
+        const data = await response.json()
+        
+        // Transform data to match component format
+        const transformedStadiums = data.map((stadium: any) => ({
+          id: stadium.id,
+          name: stadium.name,
+          sportId: stadium.sport_id,
+          enabled: stadium.enabled !== false
+        }))
+
+        setStadiums(transformedStadiums)
       } catch (error) {
         toast({
           title: language === "ar" ? "خطأ في تحميل الملاعب" : "Error loading stadiums",
@@ -116,15 +90,44 @@ export default function AdminStadiums() {
   const handleAddStadium = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    try {
-      // In a real app, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+    if (!formData.name || !formData.sportId) {
+      toast({
+        title: language === "ar" ? "خطأ في الإدخال" : "Input Error",
+        description: language === "ar" 
+          ? "يرجى ملء جميع الحقول المطلوبة" 
+          : "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
 
+    try {
+      // Create stadium in Firebase through our API
+      const response = await fetch('/api/stadiums', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          sportId: formData.sportId,
+          enabled: formData.enabled,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create stadium')
+      }
+
+      const newStadiumData = await response.json()
+      
+      // Add to local state
       const newStadium: Stadium = {
-        id: Date.now().toString(),
-        name: formData.name,
-        sportId: formData.sportId,
-        enabled: formData.enabled,
+        id: newStadiumData.id,
+        name: newStadiumData.name,
+        sportId: newStadiumData.sport_id,
+        enabled: newStadiumData.enabled !== false,
       }
 
       setStadiums([...stadiums, newStadium])
@@ -136,6 +139,7 @@ export default function AdminStadiums() {
         description: language === "ar" ? "تم إضافة الملعب بنجاح" : "The stadium has been added successfully",
       })
     } catch (error) {
+      console.error('Error creating stadium:', error)
       toast({
         title: language === "ar" ? "فشل إضافة الملعب" : "Failed to Add Stadium",
         description:
@@ -163,9 +167,27 @@ export default function AdminStadiums() {
     if (!selectedStadium) return
 
     try {
-      // In a real app, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Update stadium in Firebase through our API
+      const response = await fetch(`/api/stadiums/${selectedStadium.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          sport_id: formData.sportId,
+          enabled: formData.enabled,
+        }),
+      })
 
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update stadium')
+      }
+
+      const updatedStadiumData = await response.json()
+      
+      // Update local state
       const updatedStadiums = stadiums.map((stadium) =>
         stadium.id === selectedStadium.id
           ? {
@@ -186,6 +208,7 @@ export default function AdminStadiums() {
         description: language === "ar" ? "تم تحديث بيانات الملعب بنجاح" : "The stadium has been updated successfully",
       })
     } catch (error) {
+      console.error('Error updating stadium:', error)
       toast({
         title: language === "ar" ? "فشل تحديث الملعب" : "Failed to Update Stadium",
         description:
@@ -199,8 +222,18 @@ export default function AdminStadiums() {
 
   const handleToggleStadium = async (stadiumId: string, enabled: boolean) => {
     try {
-      // In a real app, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      // Update stadium status in Firebase through our API
+      const response = await fetch(`/api/stadiums/${stadiumId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update stadium status')
+      }
 
       const updatedStadiums = stadiums.map((stadium) => (stadium.id === stadiumId ? { ...stadium, enabled } : stadium))
 
@@ -223,6 +256,7 @@ export default function AdminStadiums() {
             : "The stadium has been disabled successfully",
       })
     } catch (error) {
+      console.error('Error toggling stadium:', error)
       toast({
         title: language === "ar" ? "فشل تغيير حالة الملعب" : "Failed to Change Stadium Status",
         description:
@@ -245,8 +279,14 @@ export default function AdminStadiums() {
       return
 
     try {
-      // In a real app, this would be an API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      // Delete stadium from Firebase through our API
+      const response = await fetch(`/api/stadiums/${stadiumId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete stadium')
+      }
 
       setStadiums(stadiums.filter((stadium) => stadium.id !== stadiumId))
 
@@ -255,6 +295,7 @@ export default function AdminStadiums() {
         description: language === "ar" ? "تم حذف الملعب بنجاح" : "The stadium has been deleted successfully",
       })
     } catch (error) {
+      console.error('Error deleting stadium:', error)
       toast({
         title: language === "ar" ? "فشل حذف الملعب" : "Failed to Delete Stadium",
         description:

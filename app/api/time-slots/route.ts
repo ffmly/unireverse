@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
+import { timeSlotsOperations } from "@/lib/firestore-utils"
 
 export async function GET() {
   try {
-    const { data, error } = await supabase.from("time_slots").select("*")
-
-    if (error) {
-      throw error
-    }
-
+    const data = await timeSlotsOperations.getAll()
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error fetching time slots:", error)
@@ -21,31 +16,18 @@ export async function POST(request: Request) {
     const { time, period } = await request.json()
 
     // Check if time slot already exists
-    const { data: existingSlot, error: checkError } = await supabase
-      .from("time_slots")
-      .select("*")
-      .eq("time", time)
-      .eq("period", period)
-      .maybeSingle()
+    const existingSlots = await timeSlotsOperations.findByTimeAndPeriod(time, period)
 
-    if (checkError) {
-      throw checkError
-    }
-
-    if (existingSlot) {
+    if (existingSlots.length > 0) {
       return NextResponse.json({ error: "Time slot already exists" }, { status: 400 })
     }
 
     // Insert new time slot
-    const { data, error } = await supabase
-      .from("time_slots")
-      .insert([{ time, period, enabled: true }])
-      .select()
-      .single()
-
-    if (error) {
-      throw error
-    }
+    const data = await timeSlotsOperations.create({
+      time,
+      period,
+      enabled: true
+    })
 
     return NextResponse.json(data)
   } catch (error) {
